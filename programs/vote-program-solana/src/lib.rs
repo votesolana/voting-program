@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 
 use anchor_spl::{
-    token::{self, Mint, Token, TokenAccount}
+    token::{Mint, Token, TokenAccount}
 };
 
 declare_id!("6GBHN1ddUDKtf7kaJ5BwoHzVPxXDMKaATS4WuXe4TFAg");
@@ -9,7 +9,7 @@ declare_id!("6GBHN1ddUDKtf7kaJ5BwoHzVPxXDMKaATS4WuXe4TFAg");
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vault";
     pub const VOTE_INFO_SEED: &[u8] = b"voting_info";
-    pub const TOKEN_WALLET_SEED: &[u8] = b"";
+    pub const TOKEN_WALLET_SEED: &[u8] = b"token";
 }
 
 #[program]
@@ -46,6 +46,6 @@ pub struct Initialize<'info> {
     pub treasury_account: Account<'info, TokenAccount>,
     pub mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
-    pub system_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
 }
 
