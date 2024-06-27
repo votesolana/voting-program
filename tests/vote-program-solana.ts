@@ -129,7 +129,7 @@ describe("vote-program-solana", () => {
     console.log("treasuryAccount", treasuryAccount)
 
     const tx = await program.methods
-      .vote(new anchor.BN(101), true, TimeLength.OneMinute) //number in here is amount of tokens to stake 100=100
+      .vote(new anchor.BN(101), true, anchor.BN(TimeLength.OneMinute)) //number in here is amount of tokens to stake 100=100
       .signers([payer.payer])
       .accounts({
         voteInfoAcount: voteInfo,
@@ -137,6 +137,7 @@ describe("vote-program-solana", () => {
         userVotewiftrempAccount: userVotewiftrempAccount.address,
         treasury: treasuryAccount,
         mint: mintKeypair.publicKey,
+        globalVoteAccount: globalVoteAccount,
         signer: payer.publicKey,
       })
       .rpc();
