@@ -62,14 +62,14 @@ describe("vote-program-solana", () => {
       payer.publicKey
     );
 
-    await mintTo(
+   /* await mintTo(
       connection,
       payer.payer,
       mintKeypair.publicKey,
       userVotewiftrempAccount.address,
       payer.payer,
-      1e7
-    )
+      1e8 //100 and 1e7 is 10
+    ) */
 
     let [voteInfo] = PublicKey.findProgramAddressSync(
       [Buffer.from("votewiftremp_info"), payer.publicKey.toBuffer()],
@@ -81,16 +81,16 @@ describe("vote-program-solana", () => {
       program.programId
     )
 
-    await getOrCreateAssociatedTokenAccount(
+    const bob = await getOrCreateAssociatedTokenAccount(
       connection,
       payer.payer,
       mintKeypair.publicKey,
       payer.publicKey
     )
-
-
+    console.log("voteaccount", voteAccount)
+    console.log("userVotewiftrempAccount", userVotewiftrempAccount)
     const tx = await program.methods
-      .vote(new anchor.BN(101))
+      .vote(new anchor.BN(101)) //number in here is amount of tokens to stake 100=100
       .signers([payer.payer])
       .accounts({
         voteInfoAcount: voteInfo,
@@ -99,10 +99,56 @@ describe("vote-program-solana", () => {
         mint: mintKeypair.publicKey,
         signer: payer.publicKey
       })
-      .rpc();
+      .rpc();    
+  
 
-      console.log("Your transaction signature", tx);
+      console.log("Your transaction signature place vote", tx);
+  });
+
+
+  
+  it("collectVote", async () => {
+
+    let [treasuryAccount] = PublicKey.findProgramAddressSync(
+      [Buffer.from("vote_vaulttremp")],
+      program.programId
+    )
+
+    let userVotewiftrempAccount = await  getOrCreateAssociatedTokenAccount(
+      connection,
+      payer.payer,
+      mintKeypair.publicKey,
+      payer.publicKey
+    );
+
+
+    let [voteInfo] = PublicKey.findProgramAddressSync(
+      [Buffer.from("votewiftremp_info"), payer.publicKey.toBuffer()],
+      program.programId
+    )
+
+    let [voteAccount] = PublicKey.findProgramAddressSync(
+      [Buffer.from("votewiftremptoken"), payer.publicKey.toBuffer()],
+      program.programId
+    )
+
+
+    const tx = await program.methods
+    .collectVote()
+    .signers([payer.payer])
+    .accounts({
+      treasury: treasuryAccount,
+      voteInfoAcount: voteInfo,
+      voteAccount: voteAccount,
+      userVotewiftrempAccount: userVotewiftrempAccount.address,
+      mint: mintKeypair.publicKey,
+      signer: payer.publicKey
+    })
+    .rpc();    
+    console.log("Your transaction signature collect vote", tx);
   })
+
+ 
 });
 
 
