@@ -114,6 +114,15 @@ describe("vote-program-solana", () => {
       program.programId
     )
 
+       await mintTo(
+      connection,
+      payer.payer,
+      mintKeypair.publicKey,
+      treasuryAccount,
+      payer.payer,
+      1e8 //100 and 1e7 is 10
+    )
+
     let userVotewiftrempAccount = await  getOrCreateAssociatedTokenAccount(
       connection,
       payer.payer,
