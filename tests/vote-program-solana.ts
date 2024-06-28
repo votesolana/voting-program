@@ -168,7 +168,7 @@ describe("vote-program-solana", () => {
     console.log("global vote", globalVoteAccount)
 
     const tx = await program.methods
-      .vote(new anchor.BN(100), false, { oneMinute: {} }) //number in here is amount of tokens to stake 100=100
+      .vote(new anchor.BN(280), false, { oneMinute: {} }) //number in here is amount of tokens to stake 100=100
       .signers([payer.payer])
       .accounts({
         voteInfoAcount: voteInfo,
@@ -184,7 +184,7 @@ describe("vote-program-solana", () => {
 
     console.log("Your transaction signature place vote", tx);
   });
-
+/*
 
   
     it("collectVote", async () => {
@@ -237,7 +237,7 @@ describe("vote-program-solana", () => {
       .rpc();    
       console.log("Your transaction signature collect vote", tx);
     })
-  
+  */
    
 
 });

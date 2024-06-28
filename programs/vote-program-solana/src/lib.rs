@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use solana_program::clock::Clock;
 
-declare_id!("FVJ9PLq2d8pxkZ7eQLNitkVP9LcR3AaA9zoAk5mcMXP1");
+declare_id!("DdtYyWsnynW3iNQA9wt1gVxQweisgAVWJUEYhfJTe95x");
 
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vaulttremp";
@@ -55,10 +55,11 @@ pub mod vote_program_solana {
         let vote_info_account = &mut ctx.accounts.vote_info_account;
         let global_vote_account = &mut ctx.accounts.global_vote_account;
 
+
         if vote_info_account.is_voted {
             return Err(ErrorCode::IsVoted.into());
         }
-
+        
         if amount < 100 {
             return Err(ErrorCode::TooLow.into());
         }
@@ -306,7 +307,7 @@ pub enum ErrorCode {
     NotVoted,
     #[msg("You must wait longer to claim")]
     TimeLocked,
-    #[msg("You need at least 100 tokens to vote")]
+    #[msg("Not enough vote token")]
     TooLow,
     #[msg("Not enough tokens in reward pool to place this vote")]
     RewardPoolLow,
