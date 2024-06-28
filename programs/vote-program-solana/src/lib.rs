@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use solana_program::clock::Clock;
 
-declare_id!("AjPT3Q1u3AgVcdeacq6YEV45VB2ybdMGb4m8LfiR9w4q");
+declare_id!("3rSEhfj8jdXJWqm28QHV81dtAkPf9JA44pyVdrsnMG5H");
 
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vaulttremp";
@@ -27,12 +27,7 @@ pub enum TimeLength {
 pub mod vote_program_solana {
     use super::*;
 
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        
-        let global_vote_account = &mut ctx.accounts.global_vote_account;
-
-        global_vote_account.tremp = 0; // Initialize with a default value
-        global_vote_account.boden = 0; // Initialize with a default value
+    pub fn initialize(_ctx: Context<Initialize>) -> Result<()> {
         Ok(())
     }
 
@@ -73,36 +68,34 @@ pub mod vote_program_solana {
         vote_info_account.voted_at_slot = clock.slot;
         vote_info_account.is_voted = true;
         vote_info_account.wif_tremp = vote_for_tremp;
+        vote_info_account.vote_amount=amount;
 
         let vote_amount = amount
             .checked_mul((10u64).pow(ctx.accounts.mint.decimals as u32))
             .unwrap();
         //1.000000
 
-        /*
-        let rewards = ((amount as f64) * 0.2) as u64;
+        let rewards = ((vote_amount as f64) * 0.2) as u64;
 
-        
         //do a check to see if rewards are less than amount in reward wallet and return error code if so
-
 
         let bump = ctx.bumps.treasury_account;
         let signer: &[&[&[u8]]] = &[&[constants::TREASURY_SEED, &[bump]]];
- 
+
         //transfer from treasury to vote account
         transfer(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
-                Transfer{
+                Transfer {
                     from: ctx.accounts.treasury_account.to_account_info(),
-                    to: ctx.accounts.user_votewiftremp_account.to_account_info(),
+                    to: ctx.accounts.vote_account.to_account_info(),
                     authority: ctx.accounts.treasury_account.to_account_info(),
                 },
                 signer
-            ), 
+            ),
             rewards
-        )?; 
-        */
+        )?;
+
         //transfer for user wallet to vote account
         transfer(
             CpiContext::new(ctx.accounts.token_program.to_account_info(), Transfer {
@@ -113,14 +106,12 @@ pub mod vote_program_solana {
             vote_amount //+reward pool amount and transfer from reward pool to vote_account
         )?;
 
-        
-        if vote_for_tremp{
-            global_vote_account.tremp += vote_amount;
+        if vote_for_tremp {
+            global_vote_account.tremp += amount;
         } else {
-            global_vote_account.boden += vote_amount;
+            global_vote_account.boden += amount;
         }
-        
-    
+
         // ALCULATE REWARD BASED ON SECOND FUNCTION PARAMETER TIME LENGTH, MULTIPLY REWARD RATE BY AMOUNT AND SEND REWARDS FROM REWARD WALLET TO VOTE_ACCOUNT ALONG WITH tokens
         //FROM VOTEWIFTREMP USER Account
 
@@ -129,6 +120,7 @@ pub mod vote_program_solana {
 
     pub fn collect_vote(ctx: Context<CollectVote>) -> Result<()> {
         let vote_info_account = &mut ctx.accounts.vote_info_account;
+        let global_vote_account = &mut ctx.accounts.global_vote_account;
 
         if !vote_info_account.is_voted {
             return Err(ErrorCode::NotVoted.into());
@@ -138,8 +130,6 @@ pub mod vote_program_solana {
         let _slots_pass = clock.slot - vote_info_account.voted_at_slot;
 
         let vote_amount = ctx.accounts.vote_account.amount;
-
-        
 
         let voter = ctx.accounts.signer.key();
         let bump = ctx.bumps.vote_account;
@@ -160,12 +150,16 @@ pub mod vote_program_solana {
 
         vote_info_account.is_voted = false;
         vote_info_account.voted_at_slot = clock.slot;
+  
 
-        /* if vote_for_tremp{
-            global_vote_account.tremp += amount;
+
+        if vote_info_account.wif_tremp {
+            global_vote_account.tremp -=  vote_info_account.vote_amount;
         } else {
-            global_vote_account.boden -= amount;
-        }*/
+            global_vote_account.boden -=  vote_info_account.vote_amount;
+        }
+
+        vote_info_account.vote_amount = 0;
 
         Ok(())
     }
@@ -210,7 +204,7 @@ pub struct Vote<'info> {
         seeds = [constants::GLOBAL_VOTE_SEED],
         bump,
     )]
-    pub global_vote_account: Box<Account<'info, GlobalVotes>>, 
+    pub global_vote_account: Box<Account<'info, GlobalVotes>>,
 
     #[account(
         init_if_needed,
@@ -229,7 +223,7 @@ pub struct Vote<'info> {
         token::mint = mint,
         token::authority = vote_account
     )]
-    pub vote_account: Account<'info, TokenAccount>,
+    pub vote_account: Box<Account<'info, TokenAccount>>,
 
     #[account(
         mut,
@@ -238,12 +232,12 @@ pub struct Vote<'info> {
     )]
     pub user_votewiftremp_account: Account<'info, TokenAccount>,
 
-    /*#[account(
+    #[account(
         mut,
         seeds = [constants::TREASURY_SEED],
         bump,
     )]
-    pub treasury_account: Account<'info, TokenAccount>,*/
+    pub treasury_account: Box<Account<'info, TokenAccount>>,
 
     pub mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
@@ -261,7 +255,7 @@ pub struct CollectVote<'info> {
         seeds = [constants::GLOBAL_VOTE_SEED],
         bump,
     )]
-    pub global_vote_account: Account<'info, GlobalVotes>,
+    pub global_vote_account: Box<Account<'info, GlobalVotes>>,
 
     #[account(
         mut,
@@ -275,7 +269,7 @@ pub struct CollectVote<'info> {
         seeds = [constants::VOTE_INFO_SEED, signer.key().as_ref()],
         bump,
     )]
-    pub vote_info_account: Account<'info, VoteInfo>,
+    pub vote_info_account: Box<Account<'info, VoteInfo>>,
 
     #[account(
         mut,
@@ -294,7 +288,8 @@ pub struct CollectVote<'info> {
 pub struct VoteInfo {
     pub voted_at_slot: u64, // Exact time slot vote is placed
     pub is_voted: bool,
-    pub wif_tremp: bool, // Voted for Tremp or Boden
+    pub wif_tremp: bool,
+    pub vote_amount: u64,// Voted for Tremp or Boden
 }
 #[account]
 pub struct GlobalVotes {
