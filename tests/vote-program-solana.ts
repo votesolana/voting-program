@@ -28,13 +28,15 @@ describe("vote-program-solana", () => {
   const payer = provider.wallet as anchor.Wallet;
   const connection = new Connection("http://127.0.0.1:8899", "confirmed");
   const mintKeypair = Keypair.fromSecretKey(new Uint8Array([
-    106, 161, 133, 170, 47, 84, 34, 10, 51, 38, 126,
-    28, 165, 73, 222, 35, 53, 223, 147, 161, 27, 93,
-    127, 21, 79, 214, 100, 117, 39, 240, 7, 203, 122,
-    197, 84, 167, 209, 141, 227, 190, 41, 174, 122, 255,
-    21, 102, 98, 37, 100, 19, 144, 78, 251, 179, 167,
-    150, 118, 127, 0, 232, 131, 29, 3, 244
-  ]));
+       73, 232, 239, 242, 113,  71, 182,  55, 127, 179, 240,
+      235,   7,  94,  76, 116, 255, 161,  36, 187,  50, 166,
+      232,   5,  34, 192,   7, 248, 157, 236,  81, 172,  92,
+      121,  49,  17,  91,  30, 188,  28, 103,  32,  69,   2,
+      111, 189,   2, 170, 103,  87, 139, 172, 154, 248, 243,
+      175, 184, 203,   4,  43, 211,  42,  51, 211
+    ]));
+
+    console.log(payer.publicKey)
 
 
   const program = anchor.workspace.VoteProgramSolana as Program<VoteProgramSolana>;
@@ -115,14 +117,14 @@ describe("vote-program-solana", () => {
       mintKeypair.publicKey,
       payer.publicKey
     );
-    await mintTo(
+    /*await mintTo(
       connection,
       payer.payer,
       mintKeypair.publicKey,
       userVotewiftrempAccount.address,
       payer.payer,
       1e8 //100 and 1e7 is 10
-    )
+    )*/
 
 
 
@@ -166,7 +168,7 @@ describe("vote-program-solana", () => {
     console.log("global vote", globalVoteAccount)
 
     const tx = await program.methods
-      .vote(new anchor.BN(101), false, { oneMinute: {} }) //number in here is amount of tokens to stake 100=100
+      .vote(new anchor.BN(100), false, { oneMinute: {} }) //number in here is amount of tokens to stake 100=100
       .signers([payer.payer])
       .accounts({
         voteInfoAcount: voteInfo,
@@ -183,7 +185,7 @@ describe("vote-program-solana", () => {
     console.log("Your transaction signature place vote", tx);
   });
 
-/*
+
   
     it("collectVote", async () => {
   
@@ -236,7 +238,7 @@ describe("vote-program-solana", () => {
       console.log("Your transaction signature collect vote", tx);
     })
   
-   */
+   
 
 });
 

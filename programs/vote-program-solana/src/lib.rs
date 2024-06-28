@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use solana_program::clock::Clock;
 
-declare_id!("3rSEhfj8jdXJWqm28QHV81dtAkPf9JA44pyVdrsnMG5H");
+declare_id!("FVJ9PLq2d8pxkZ7eQLNitkVP9LcR3AaA9zoAk5mcMXP1");
 
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vaulttremp";
@@ -291,6 +291,7 @@ pub struct VoteInfo {
     pub wif_tremp: bool,
     pub vote_amount: u64,// Voted for Tremp or Boden
 }
+
 #[account]
 pub struct GlobalVotes {
     pub tremp: u64,
