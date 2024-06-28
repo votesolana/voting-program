@@ -1,12 +1,12 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{Mint, Token, TokenAccount, Transfer, transfer}
+    token::{ Mint, Token, TokenAccount, Transfer, transfer },
 };
 
 use solana_program::clock::Clock;
 
-declare_id!("HVRsFX8a4ndZrKtJ7Yx7duuWCThYEMDcbj5dUmt9ar7f");
+declare_id!("AjPT3Q1u3AgVcdeacq6YEV45VB2ybdMGb4m8LfiR9w4q");
 
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vaulttremp";
@@ -23,29 +23,38 @@ pub enum TimeLength {
     VeryLong,
 }
 
-
 #[program]
 pub mod vote_program_solana {
     use super::*;
 
-    pub fn initialize(_ctx: Context<Initialize>) -> Result<()> {
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        
+        let global_vote_account = &mut ctx.accounts.global_vote_account;
+
+        global_vote_account.tremp = 0; // Initialize with a default value
+        global_vote_account.boden = 0; // Initialize with a default value
         Ok(())
     }
 
-    pub fn vote(ctx: Context<Vote>, amount: u64, vote_for_tremp: bool, timelength: TimeLength) -> Result<()> {
+    pub fn vote(
+        ctx: Context<Vote>,
+        amount: u64,
+        vote_for_tremp: bool,
+        timelength: TimeLength
+    ) -> Result<()> {
         match timelength {
             TimeLength::OneMinute => {
                 // handle short time length logic
-            },
+            }
             TimeLength::Medium => {
                 // handle medium time length logic
-            },
+            }
             TimeLength::Long => {
                 // handle long time length logic
-            },
+            }
             TimeLength::VeryLong => {
                 // handle very long time length logic
-            },
+            }
             //add error for other and say wrong time length
         }
         let vote_info_account = &mut ctx.accounts.vote_info_account;
@@ -65,16 +74,18 @@ pub mod vote_program_solana {
         vote_info_account.is_voted = true;
         vote_info_account.wif_tremp = vote_for_tremp;
 
-        let vote_amount = (amount)
-            .checked_mul(10u64.pow(ctx.accounts.mint.decimals as u32))
+        let vote_amount = amount
+            .checked_mul((10u64).pow(ctx.accounts.mint.decimals as u32))
             .unwrap();
-                //1.000000
+        //1.000000
 
+        /*
+        let rewards = ((amount as f64) * 0.2) as u64;
 
-
-        let rewards = (amount as f64 * 0.2) as u64;
-
+        
         //do a check to see if rewards are less than amount in reward wallet and return error code if so
+
+
         let bump = ctx.bumps.treasury_account;
         let signer: &[&[&[u8]]] = &[&[constants::TREASURY_SEED, &[bump]]];
  
@@ -90,32 +101,28 @@ pub mod vote_program_solana {
                 signer
             ), 
             rewards
-        )?;
-
+        )?; 
+        */
         //transfer for user wallet to vote account
         transfer(
-            CpiContext::new(
-              ctx.accounts.token_program.to_account_info(),
-              Transfer {
-                from:ctx.accounts.user_votewiftremp_account.to_account_info(),
+            CpiContext::new(ctx.accounts.token_program.to_account_info(), Transfer {
+                from: ctx.accounts.user_votewiftremp_account.to_account_info(),
                 to: ctx.accounts.vote_account.to_account_info(),
                 authority: ctx.accounts.signer.to_account_info(),
-              }
-            ),
-            vote_amount, //+reward pool amount and transfer from reward pool to vote_account
+            }),
+            vote_amount //+reward pool amount and transfer from reward pool to vote_account
         )?;
+
         
-
         if vote_for_tremp{
-            global_vote_account.tremp += amount;
+            global_vote_account.tremp += vote_amount;
         } else {
-            global_vote_account.boden -= amount;
+            global_vote_account.boden += vote_amount;
         }
-
-
-       // ALCULATE REWARD BASED ON SECOND FUNCTION PARAMETER TIME LENGTH, MULTIPLY REWARD RATE BY AMOUNT AND SEND REWARDS FROM REWARD WALLET TO VOTE_ACCOUNT ALONG WITH tokens
+        
+    
+        // ALCULATE REWARD BASED ON SECOND FUNCTION PARAMETER TIME LENGTH, MULTIPLY REWARD RATE BY AMOUNT AND SEND REWARDS FROM REWARD WALLET TO VOTE_ACCOUNT ALONG WITH tokens
         //FROM VOTEWIFTREMP USER Account
-
 
         Ok(())
     }
@@ -123,14 +130,16 @@ pub mod vote_program_solana {
     pub fn collect_vote(ctx: Context<CollectVote>) -> Result<()> {
         let vote_info_account = &mut ctx.accounts.vote_info_account;
 
-        if !vote_info_account.is_voted{
+        if !vote_info_account.is_voted {
             return Err(ErrorCode::NotVoted.into());
         }
 
         let clock = Clock::get()?;
         let _slots_pass = clock.slot - vote_info_account.voted_at_slot;
 
-        let vote_amount = ctx.accounts.vote_account.amount; 
+        let vote_amount = ctx.accounts.vote_account.amount;
+
+        
 
         let voter = ctx.accounts.signer.key();
         let bump = ctx.bumps.vote_account;
@@ -139,18 +148,24 @@ pub mod vote_program_solana {
         transfer(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
-                Transfer{
+                Transfer {
                     from: ctx.accounts.vote_account.to_account_info(),
                     to: ctx.accounts.user_votewiftremp_account.to_account_info(),
                     authority: ctx.accounts.vote_account.to_account_info(),
                 },
                 signer
-            ), 
-            vote_amount,
+            ),
+            vote_amount
         )?;
 
         vote_info_account.is_voted = false;
         vote_info_account.voted_at_slot = clock.slot;
+
+        /* if vote_for_tremp{
+            global_vote_account.tremp += amount;
+        } else {
+            global_vote_account.boden -= amount;
+        }*/
 
         Ok(())
     }
@@ -167,7 +182,7 @@ pub struct Initialize<'info> {
         bump,
         payer = signer,
         token::mint = mint,
-        token::authority = treasury_account,
+        token::authority = treasury_account
     )]
     pub treasury_account: Account<'info, TokenAccount>,
 
@@ -176,7 +191,7 @@ pub struct Initialize<'info> {
         seeds = [constants::GLOBAL_VOTE_SEED],
         bump,
         payer = signer,
-        space = 8 + std::mem::size_of::<GlobalVotes>(),
+        space = 8 + std::mem::size_of::<GlobalVotes>()
     )]
     pub global_vote_account: Account<'info, GlobalVotes>,
 
@@ -195,15 +210,14 @@ pub struct Vote<'info> {
         seeds = [constants::GLOBAL_VOTE_SEED],
         bump,
     )]
-    pub global_vote_account: Account<'info, GlobalVotes>,
-    
+    pub global_vote_account: Box<Account<'info, GlobalVotes>>, 
 
     #[account(
         init_if_needed,
         seeds = [constants::VOTE_INFO_SEED, signer.key().as_ref()],
         bump,
         payer = signer,
-        space = 8 + std::mem::size_of::<VoteInfo>(),
+        space = 8 + std::mem::size_of::<VoteInfo>()
     )]
     pub vote_info_account: Account<'info, VoteInfo>,
 
@@ -224,13 +238,12 @@ pub struct Vote<'info> {
     )]
     pub user_votewiftremp_account: Account<'info, TokenAccount>,
 
-    #[account(
+    /*#[account(
         mut,
         seeds = [constants::TREASURY_SEED],
         bump,
     )]
-    pub treasury_account: Account<'info, TokenAccount>,
-
+    pub treasury_account: Account<'info, TokenAccount>,*/
 
     pub mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
@@ -243,15 +256,12 @@ pub struct CollectVote<'info> {
     #[account(mut)]
     pub signer: Signer<'info>,
 
-    
     #[account(
         mut,
         seeds = [constants::GLOBAL_VOTE_SEED],
         bump,
     )]
     pub global_vote_account: Account<'info, GlobalVotes>,
-
-
 
     #[account(
         mut,
@@ -280,8 +290,6 @@ pub struct CollectVote<'info> {
     pub system_program: Program<'info, System>,
 }
 
-
-
 #[account]
 pub struct VoteInfo {
     pub voted_at_slot: u64, // Exact time slot vote is placed
@@ -290,7 +298,7 @@ pub struct VoteInfo {
 }
 #[account]
 pub struct GlobalVotes {
-    pub tremp: u64, 
+    pub tremp: u64,
     pub boden: u64,
 }
 
@@ -306,4 +314,6 @@ pub enum ErrorCode {
     TooLow,
     #[msg("Not enough tokens in reward pool to place this vote")]
     RewardPoolLow,
+    #[msg("This program has already been deployed")]
+    ProgramAlreadyInitialized,
 }
