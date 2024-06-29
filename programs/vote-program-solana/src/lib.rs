@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use solana_program::clock::Clock;
 
-declare_id!("DdtYyWsnynW3iNQA9wt1gVxQweisgAVWJUEYhfJTe95x");
+declare_id!("HTKTfrxwcr6F41Ajf3sbG9gnytuMdGnd4TiCfDumceMM");
 
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vaulttremp";
@@ -18,9 +18,9 @@ pub mod constants {
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub enum TimeLength {
     OneMinute,
-    Medium,
-    Long,
-    VeryLong,
+    OneDay,
+    OneMonth,
+    FiveMonths,
 }
 
 #[program]
@@ -37,46 +37,54 @@ pub mod vote_program_solana {
         vote_for_tremp: bool,
         timelength: TimeLength
     ) -> Result<()> {
+        let length_in_seconds_locked: i64;
+        let mut reward_rate_denominator: f64 = 0.2;
         match timelength {
             TimeLength::OneMinute => {
-                // handle short time length logic
+                length_in_seconds_locked = 60;
+                reward_rate_denominator =
+                    reward_rate_denominator / (5.0 * 30.0 * 24.0 * 60.0 * 1.05); //5 months 30 days 24 hours 60 second timeLengthBuffer
             }
-            TimeLength::Medium => {
-                // handle medium time length logic
+            TimeLength::OneDay => {
+                length_in_seconds_locked = 24 * 60 * 60; // 1 day in seconds
+                reward_rate_denominator = reward_rate_denominator / (5.0 * 30.0 * 1.03);
             }
-            TimeLength::Long => {
-                // handle long time length logic
+            TimeLength::OneMonth => {
+                length_in_seconds_locked = 30 * 24 * 60 * 60;
+                reward_rate_denominator = reward_rate_denominator / (5.0 * 1.02);
             }
-            TimeLength::VeryLong => {
-                // handle very long time length logic
+            TimeLength::FiveMonths => {
+                length_in_seconds_locked = 5 * 30 * 24 * 60 * 60;
             }
-            //add error for other and say wrong time length
         }
+
+        msg!("Selected time length in seconds: {}", length_in_seconds_locked);
+        msg!("reward rate denom: {}", reward_rate_denominator);
         let vote_info_account = &mut ctx.accounts.vote_info_account;
         let global_vote_account = &mut ctx.accounts.global_vote_account;
-
 
         if vote_info_account.is_voted {
             return Err(ErrorCode::IsVoted.into());
         }
-        
-        if amount < 100 {
+
+        if amount < 5000 {
             return Err(ErrorCode::TooLow.into());
         }
 
         let clock = Clock::get()?;
+        msg!("seconds: {}", clock.unix_timestamp);
 
-        vote_info_account.voted_at_slot = clock.slot;
+        vote_info_account.vote_locked_until = clock.unix_timestamp + length_in_seconds_locked;
         vote_info_account.is_voted = true;
         vote_info_account.wif_tremp = vote_for_tremp;
-        vote_info_account.vote_amount=amount;
+        vote_info_account.vote_amount = amount;
 
         let vote_amount = amount
             .checked_mul((10u64).pow(ctx.accounts.mint.decimals as u32))
             .unwrap();
         //1.000000
 
-        let rewards = ((vote_amount as f64) * 0.2) as u64;
+        let rewards = ((vote_amount as f64) * reward_rate_denominator) as u64;
 
         //do a check to see if rewards are less than amount in reward wallet and return error code if so
 
@@ -128,7 +136,11 @@ pub mod vote_program_solana {
         }
 
         let clock = Clock::get()?;
-        let _slots_pass = clock.slot - vote_info_account.voted_at_slot;
+        let clock_current_time = clock.unix_timestamp;
+
+        if clock_current_time < vote_info_account.vote_locked_until {
+            return Err(ErrorCode::TimeLocked.into());
+        }
 
         let vote_amount = ctx.accounts.vote_account.amount;
 
@@ -150,14 +162,15 @@ pub mod vote_program_solana {
         )?;
 
         vote_info_account.is_voted = false;
-        vote_info_account.voted_at_slot = clock.slot;
-  
-
 
         if vote_info_account.wif_tremp {
-            global_vote_account.tremp -=  vote_info_account.vote_amount;
+            global_vote_account.tremp = global_vote_account.tremp
+                .checked_sub(vote_info_account.vote_amount)
+                .unwrap_or(0);
         } else {
-            global_vote_account.boden -=  vote_info_account.vote_amount;
+            global_vote_account.boden = global_vote_account.boden
+                .checked_sub(vote_info_account.vote_amount)
+                .unwrap_or(0);
         }
 
         vote_info_account.vote_amount = 0;
@@ -287,10 +300,10 @@ pub struct CollectVote<'info> {
 
 #[account]
 pub struct VoteInfo {
-    pub voted_at_slot: u64, // Exact time slot vote is placed
+    pub vote_locked_until: i64, // Exact time slot vote is placed
     pub is_voted: bool,
     pub wif_tremp: bool,
-    pub vote_amount: u64,// Voted for Tremp or Boden
+    pub vote_amount: u64, // Voted for Tremp or Boden
 }
 
 #[account]
@@ -305,7 +318,7 @@ pub enum ErrorCode {
     IsVoted,
     #[msg("You don't have a vote to claim")]
     NotVoted,
-    #[msg("You must wait longer to claim")]
+    #[msg("Your votes are still locked. You must wait longer")]
     TimeLocked,
     #[msg("Not enough vote token")]
     TooLow,
@@ -313,4 +326,6 @@ pub enum ErrorCode {
     RewardPoolLow,
     #[msg("This program has already been deployed")]
     ProgramAlreadyInitialized,
+    #[msg("Invalid Time Length")]
+    InvalidTimeLength,
 }
