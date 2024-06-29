@@ -17,7 +17,7 @@ pub mod constants {
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub enum TimeLength {
-    OneMinute,
+    OneMinute, //change to one week but one minute for testing and make sure to update match statement logic below
     OneDay,
     OneMonth,
     FiveMonths,
