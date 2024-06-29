@@ -5,7 +5,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-vote_program_solana = "HTKTfrxwcr6F41Ajf3sbG9gnytuMdGnd4TiCfDumceMM"
+vote_program_solana = "CZJhEwb3vrbyfdDjUF1bkWHhyTA7C5HCQpxp4o2L5xk4"
 
 [registry]
 url = "https://api.apr.dev"

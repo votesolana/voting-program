@@ -117,14 +117,14 @@ describe("vote-program-solana", () => {
       mintKeypair.publicKey,
       payer.publicKey
     );
-    /*await mintTo(
+    await mintTo(
       connection,
       payer.payer,
       mintKeypair.publicKey,
       userVotewiftrempAccount.address,
       payer.payer,
-      1e10 //100 and 1e7 is 10
-    )*/
+      1e12 //100 and 1e7 is 10
+    )
 
 
 
@@ -169,7 +169,7 @@ describe("vote-program-solana", () => {
     console.log("global vote", globalVoteAccount)
 
     const tx = await program.methods
-      .vote(new anchor.BN(5000), true, { oneMinute: {} }) //number in here is amount of tokens to stake 100=100
+      .vote(new anchor.BN(1000000), true, { fiveMonths: {} }) //number in here is amount of tokens to stake 100=100
       .signers([payer.payer])
       .accounts({
         voteInfoAcount: voteInfo,

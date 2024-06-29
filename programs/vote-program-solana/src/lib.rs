@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use solana_program::clock::Clock;
 
-declare_id!("HTKTfrxwcr6F41Ajf3sbG9gnytuMdGnd4TiCfDumceMM");
+declare_id!("CZJhEwb3vrbyfdDjUF1bkWHhyTA7C5HCQpxp4o2L5xk4");
 
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vaulttremp";
@@ -77,7 +77,7 @@ pub mod vote_program_solana {
         vote_info_account.vote_locked_until = clock.unix_timestamp + length_in_seconds_locked;
         vote_info_account.is_voted = true;
         vote_info_account.wif_tremp = vote_for_tremp;
-        vote_info_account.vote_amount = amount;
+        vote_info_account.vote_amount = amount as u32;
 
         let vote_amount = amount
             .checked_mul((10u64).pow(ctx.accounts.mint.decimals as u32))
@@ -116,9 +116,9 @@ pub mod vote_program_solana {
         )?;
 
         if vote_for_tremp {
-            global_vote_account.tremp += amount;
+            global_vote_account.tremp += amount as u32;
         } else {
-            global_vote_account.boden += amount;
+            global_vote_account.boden += amount as u32;
         }
 
         // ALCULATE REWARD BASED ON SECOND FUNCTION PARAMETER TIME LENGTH, MULTIPLY REWARD RATE BY AMOUNT AND SEND REWARDS FROM REWARD WALLET TO VOTE_ACCOUNT ALONG WITH tokens
@@ -303,13 +303,13 @@ pub struct VoteInfo {
     pub vote_locked_until: i64, // Exact time slot vote is placed
     pub is_voted: bool,
     pub wif_tremp: bool,
-    pub vote_amount: u64, // Voted for Tremp or Boden
+    pub vote_amount: u32, // Voted for Tremp or Boden
 }
 
 #[account]
 pub struct GlobalVotes {
-    pub tremp: u64,
-    pub boden: u64,
+    pub tremp: u32,
+    pub boden: u32,
 }
 
 #[error_code]
