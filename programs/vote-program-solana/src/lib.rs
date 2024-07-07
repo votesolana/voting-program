@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use solana_program::clock::Clock;
 
-declare_id!("CZJhEwb3vrbyfdDjUF1bkWHhyTA7C5HCQpxp4o2L5xk4");
+declare_id!("FfUTJ9ehMc2wbB4mXp6KmM2idNZE1p4qFFVPysGFB3Gi");
 
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vaulttremp";
@@ -15,12 +15,12 @@ pub mod constants {
     pub const GLOBAL_VOTE_SEED: &[u8] = b"votewiftrempglobal";
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize)]
+#[derive(AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub enum TimeLength {
-    OneMinute, //change to one week but one minute for testing and make sure to update match statement logic below
+    OneWeek, 
     OneDay,
     OneMonth,
-    FiveMonths,
+    ElectionDay,
 }
 
 #[program]
@@ -40,26 +40,24 @@ pub mod vote_program_solana {
         let length_in_seconds_locked: i64;
         let mut reward_rate_denominator: f64 = 0.2;
         match timelength {
-            TimeLength::OneMinute => {
-                length_in_seconds_locked = 60;
+            TimeLength::OneWeek => {
+                length_in_seconds_locked = 24 * 60 * 60 * 7;
                 reward_rate_denominator =
-                    reward_rate_denominator / (5.0 * 30.0 * 24.0 * 60.0 * 1.05); //5 months 30 days 24 hours 60 second timeLengthBuffer
+                    reward_rate_denominator / (5.0 * 4.0 * 2.0); //5 months 30 days 24 hours 60 second timeLengthBuffer
             }
             TimeLength::OneDay => {
                 length_in_seconds_locked = 24 * 60 * 60; // 1 day in seconds
-                reward_rate_denominator = reward_rate_denominator / (5.0 * 30.0 * 1.03);
+                reward_rate_denominator = reward_rate_denominator / (5.0 * 4.0 * 7.0 * 3.0);
             }
             TimeLength::OneMonth => {
                 length_in_seconds_locked = 30 * 24 * 60 * 60;
-                reward_rate_denominator = reward_rate_denominator / (5.0 * 1.02);
+                reward_rate_denominator = reward_rate_denominator / (5.0 * 1.5);
             }
-            TimeLength::FiveMonths => {
-                length_in_seconds_locked = 5 * 30 * 24 * 60 * 60;
+            TimeLength::ElectionDay => {
+                length_in_seconds_locked = 1730851200; // set directly to day after election day november 6th,2024 in unix
             }
         }
 
-        msg!("Selected time length in seconds: {}", length_in_seconds_locked);
-        msg!("reward rate denom: {}", reward_rate_denominator);
         let vote_info_account = &mut ctx.accounts.vote_info_account;
         let global_vote_account = &mut ctx.accounts.global_vote_account;
 
@@ -72,9 +70,15 @@ pub mod vote_program_solana {
         }
 
         let clock = Clock::get()?;
-        msg!("seconds: {}", clock.unix_timestamp);
+
 
         vote_info_account.vote_locked_until = clock.unix_timestamp + length_in_seconds_locked;
+
+
+        //only for fivemonths directly by pass and set to specific data
+        if timelength == TimeLength::ElectionDay {
+            vote_info_account.vote_locked_until = length_in_seconds_locked; 
+        }
         vote_info_account.is_voted = true;
         vote_info_account.wif_tremp = vote_for_tremp;
         vote_info_account.vote_amount = amount as u32;

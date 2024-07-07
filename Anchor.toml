@@ -3,15 +3,19 @@
 [features]
 resolution = true
 skip-lint = false
+seeds = true
+
 
 [programs.localnet]
-vote_program_solana = "CZJhEwb3vrbyfdDjUF1bkWHhyTA7C5HCQpxp4o2L5xk4"
+vote_program_solana = "FfUTJ9ehMc2wbB4mXp6KmM2idNZE1p4qFFVPysGFB3Gi"
+[programs.testnet]
+vote_program_solana = "FfUTJ9ehMc2wbB4mXp6KmM2idNZE1p4qFFVPysGFB3Gi"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "testnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
