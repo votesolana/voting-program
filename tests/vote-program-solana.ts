@@ -26,7 +26,7 @@ describe("vote-program-solana", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(anchor.AnchorProvider.env());
   const payer = provider.wallet as anchor.Wallet;
-  const connection = new Connection("https://api.testnet.solana.com", "confirmed");
+  const connection = new Connection("https://api.devnet.solana.com", "confirmed");
   ;
   const mintKeypair = Keypair.fromSecretKey(new Uint8Array([
     228, 20, 203, 114, 138, 221, 55, 253, 249, 14, 147,
@@ -43,9 +43,9 @@ describe("vote-program-solana", () => {
 
 
 
-  let walletAddy = new PublicKey("GyQunqtSNDcEBHafuUB81ECjkFJqgPr1k6merxwME22Y");
+  let walletAddy = new PublicKey("4EJ6QBUQacF3sSCg5UWnAi66uYaLsQ2pmiMbe2e8H3kk");
 
-  let bob = async () => {
+ let bob = async () => {
     let userVotewiftrempAccountOtherWallet = await getOrCreateAssociatedTokenAccount(
       connection,
       payer.payer,
@@ -64,7 +64,8 @@ describe("vote-program-solana", () => {
     )
   }
   
-  bob();
+  //bob();
+  
 
 
 
@@ -89,7 +90,7 @@ describe("vote-program-solana", () => {
 
 
 
-
+  
 
     let [treasuryAccount] = PublicKey.findProgramAddressSync(
       [Buffer.from("vote_vaulttremp")],

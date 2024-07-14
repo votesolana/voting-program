@@ -6,16 +6,17 @@ skip-lint = false
 seeds = true
 
 
+
+[programs.devnet]
+vote_program_solana = "9uxgTYUzXAsWbRBGPUckxKcbzSS9bCYmMLjMfeUvMYer"
 [programs.localnet]
-vote_program_solana = "FfUTJ9ehMc2wbB4mXp6KmM2idNZE1p4qFFVPysGFB3Gi"
-[programs.testnet]
-vote_program_solana = "FfUTJ9ehMc2wbB4mXp6KmM2idNZE1p4qFFVPysGFB3Gi"
+vote_program_solana = "9uxgTYUzXAsWbRBGPUckxKcbzSS9bCYmMLjMfeUvMYer"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "testnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

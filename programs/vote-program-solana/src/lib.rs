@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use solana_program::clock::Clock;
 
-declare_id!("FfUTJ9ehMc2wbB4mXp6KmM2idNZE1p4qFFVPysGFB3Gi");
+declare_id!("9uxgTYUzXAsWbRBGPUckxKcbzSS9bCYmMLjMfeUvMYer");
 
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vaulttremp";
@@ -15,12 +15,19 @@ pub mod constants {
     pub const GLOBAL_VOTE_SEED: &[u8] = b"votewiftrempglobal";
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, PartialEq)]
+#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Clone)]
 pub enum TimeLength {
-    OneWeek, 
     OneDay,
+    OneWeek,
     OneMonth,
     ElectionDay,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Clone)]
+pub enum Candidate {
+    Tremp,
+    Boden,
+    Tate,
 }
 
 #[program]
@@ -34,16 +41,15 @@ pub mod vote_program_solana {
     pub fn vote(
         ctx: Context<Vote>,
         amount: u64,
-        vote_for_tremp: bool,
+        candidate: Candidate,
         timelength: TimeLength
     ) -> Result<()> {
         let length_in_seconds_locked: i64;
-        let mut reward_rate_denominator: f64 = 0.2;
+        let mut reward_rate_denominator: f64 = 0.1;
         match timelength {
             TimeLength::OneWeek => {
                 length_in_seconds_locked = 24 * 60 * 60 * 7;
-                reward_rate_denominator =
-                    reward_rate_denominator / (5.0 * 4.0 * 2.0); //5 months 30 days 24 hours 60 second timeLengthBuffer
+                reward_rate_denominator = reward_rate_denominator / (5.0 * 4.0 * 2.0); //5 months 30 days 24 hours 60 second timeLengthBuffer
             }
             TimeLength::OneDay => {
                 length_in_seconds_locked = 24 * 60 * 60; // 1 day in seconds
@@ -61,7 +67,7 @@ pub mod vote_program_solana {
         let vote_info_account = &mut ctx.accounts.vote_info_account;
         let global_vote_account = &mut ctx.accounts.global_vote_account;
 
-        if vote_info_account.is_voted {
+        if vote_info_account.is_voted == true {
             return Err(ErrorCode::IsVoted.into());
         }
 
@@ -71,17 +77,16 @@ pub mod vote_program_solana {
 
         let clock = Clock::get()?;
 
-
         vote_info_account.vote_locked_until = clock.unix_timestamp + length_in_seconds_locked;
-
 
         //only for fivemonths directly by pass and set to specific data
         if timelength == TimeLength::ElectionDay {
-            vote_info_account.vote_locked_until = length_in_seconds_locked; 
+            vote_info_account.vote_locked_until = length_in_seconds_locked;
         }
-        vote_info_account.is_voted = true;
-        vote_info_account.wif_tremp = vote_for_tremp;
+
+        vote_info_account.candidate_chosen = candidate;
         vote_info_account.vote_amount = amount as u32;
+        vote_info_account.time_length = timelength;
 
         let vote_amount = amount
             .checked_mul((10u64).pow(ctx.accounts.mint.decimals as u32))
@@ -119,10 +124,12 @@ pub mod vote_program_solana {
             vote_amount //+reward pool amount and transfer from reward pool to vote_account
         )?;
 
-        if vote_for_tremp {
+        if vote_info_account.candidate_chosen == Candidate::Tremp {
             global_vote_account.tremp += amount as u32;
-        } else {
+        } else if vote_info_account.candidate_chosen == Candidate::Boden {
             global_vote_account.boden += amount as u32;
+        } else {
+            global_vote_account.tate += amount as u32;
         }
 
         // ALCULATE REWARD BASED ON SECOND FUNCTION PARAMETER TIME LENGTH, MULTIPLY REWARD RATE BY AMOUNT AND SEND REWARDS FROM REWARD WALLET TO VOTE_ACCOUNT ALONG WITH tokens
@@ -165,19 +172,25 @@ pub mod vote_program_solana {
             vote_amount
         )?;
 
-        vote_info_account.is_voted = false;
 
-        if vote_info_account.wif_tremp {
+
+        if vote_info_account.candidate_chosen == Candidate::Tremp {
             global_vote_account.tremp = global_vote_account.tremp
                 .checked_sub(vote_info_account.vote_amount)
                 .unwrap_or(0);
-        } else {
+        } else if vote_info_account.candidate_chosen == Candidate::Boden {
             global_vote_account.boden = global_vote_account.boden
+                .checked_sub(vote_info_account.vote_amount)
+                .unwrap_or(0);
+        } else {
+            global_vote_account.tate = global_vote_account.tate
                 .checked_sub(vote_info_account.vote_amount)
                 .unwrap_or(0);
         }
 
+        vote_info_account.is_voted = false;
         vote_info_account.vote_amount = 0;
+  
 
         Ok(())
     }
@@ -305,15 +318,17 @@ pub struct CollectVote<'info> {
 #[account]
 pub struct VoteInfo {
     pub vote_locked_until: i64, // Exact time slot vote is placed
-    pub is_voted: bool,
-    pub wif_tremp: bool,
+    pub candidate_chosen: Candidate,
+    pub time_length: TimeLength,
     pub vote_amount: u32, // Voted for Tremp or Boden
+    pub is_voted: bool,
 }
 
 #[account]
 pub struct GlobalVotes {
     pub tremp: u32,
     pub boden: u32,
+    pub tate: u32,
 }
 
 #[error_code]
@@ -326,10 +341,4 @@ pub enum ErrorCode {
     TimeLocked,
     #[msg("Not enough vote token")]
     TooLow,
-    #[msg("Not enough tokens in reward pool to place this vote")]
-    RewardPoolLow,
-    #[msg("This program has already been deployed")]
-    ProgramAlreadyInitialized,
-    #[msg("Invalid Time Length")]
-    InvalidTimeLength,
 }
