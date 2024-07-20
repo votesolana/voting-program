@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { VoteProgramSolana } from "../target/types/vote_program_solana";
-import { Connection, Keypair, PublicKey, sendAndConfirmTransaction } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { createMint, getOrCreateAssociatedTokenAccount, mintTo } from "@solana/spl-token";
 import { u64 } from '@solana/buffer-layout-utils';
 import { struct } from '@solana/buffer-layout';
@@ -29,14 +29,15 @@ describe("vote-program-solana", () => {
   const connection = new Connection("https://api.devnet.solana.com", "confirmed");
   ;
   const mintKeypair = Keypair.fromSecretKey(new Uint8Array([
-    228, 20, 203, 114, 138, 221, 55, 253, 249, 14, 147,
-    163, 173, 20, 151, 0, 11, 17, 10, 157, 49, 178,
-    185, 26, 156, 224, 229, 49, 149, 103, 54, 123, 87,
-    200, 164, 167, 140, 182, 196, 90, 158, 150, 65, 160,
-    113, 178, 68, 130, 117, 64, 104, 126, 104, 40, 216,
-    248, 29, 116, 77, 168, 169, 120, 236, 65
+    73, 232, 239, 242, 113, 71, 182, 55, 127, 179, 240,
+    235, 7, 94, 76, 116, 255, 161, 36, 187, 50, 166,
+    232, 5, 34, 192, 7, 248, 157, 236, 81, 172, 92,
+    121, 49, 17, 91, 30, 188, 28, 103, 32, 69, 2,
+    111, 189, 2, 170, 103, 87, 139, 172, 154, 248, 243,
+    175, 184, 203, 4, 43, 211, 42, 51, 211
   ]));
 
+  console.log(payer.publicKey)
 
 
   const program = anchor.workspace.VoteProgramSolana as Program<VoteProgramSolana>;
@@ -96,27 +97,12 @@ describe("vote-program-solana", () => {
       [Buffer.from("vote_vaulttremp")],
       program.programId
     )
-    console.log("trwe", treasuryAccount)
-
-
-
-    await mintTo(
-      connection,
-      payer.payer,
-      mintKeypair.publicKey,
-      treasuryAccount,
-      payer.payer,
-      1e12 //100 and 1e7 is 10
-    )
-
-   
 
     let [globalVoteAccount] = PublicKey.findProgramAddressSync(
       [Buffer.from("votewiftrempglobal")],
       program.programId
     )
 
-console.log("gobal vote", globalVoteAccount)
     const tx = await program.methods.initialize()
       .accounts({
         signer: payer.publicKey,
@@ -128,19 +114,7 @@ console.log("gobal vote", globalVoteAccount)
     console.log("Your transaction signature", tx);
 
 
-
-
-
-
-
-
-
-
-
-
   });
-
-  /*
 
 
   it("vote", async () => {
@@ -154,37 +128,35 @@ console.log("gobal vote", globalVoteAccount)
     }
 
 
+    //get info from globalvoteaccount
+    const fetchAndParseMint = async (globalVoteAccount, connection) => {
+      try {
+        console.log(`Step - 1: Fetching Account Data for ${globalVoteAccount.toBase58()}`);
+        let { data } = await connection.getAccountInfo(globalVoteAccount) || {};
+        console.log(data)
+        if (!data) return;
+
+        console.log(`Step - 2: Deserializing Found Account Data`);
+        const deserialized = globalVoteLayout.decode(data);
+        console.log(deserialized);
+      } catch {
+        return null;
+      }
+    }
 
 
-    let userVotewiftrempAccountLocal = await getOrCreateAssociatedTokenAccount(
+
+    let userVotewiftrempAccount = await getOrCreateAssociatedTokenAccount(
       connection,
       payer.payer,
       mintKeypair.publicKey,
       payer.publicKey
     );
-
-    
-    let userVotewiftrempAccountOtherWallet = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer.payer,
-      mintKeypair.publicKey,
-      walletAddy
-    );
-
     await mintTo(
       connection,
       payer.payer,
       mintKeypair.publicKey,
-      userVotewiftrempAccountLocal.address,
-      payer.payer,
-      1e12 //100 and 1e7 is 10
-    )
-
-    await mintTo(
-      connection,
-      payer.payer,
-      mintKeypair.publicKey,
-      userVotewiftrempAccountOtherWallet.address,
+      userVotewiftrempAccount.address,
       payer.payer,
       1e12 //100 and 1e7 is 10
     )
@@ -218,6 +190,7 @@ console.log("gobal vote", globalVoteAccount)
       program.programId
     )
 
+    fetchAndParseMint(globalVoteAccount, connection);
 
     let [voteAccount] = PublicKey.findProgramAddressSync(
       [Buffer.from("votewiftremptoken"), payer.publicKey.toBuffer()],
@@ -226,19 +199,19 @@ console.log("gobal vote", globalVoteAccount)
 
     console.log("voteaccount", voteAccount)
     console.log("voteInfoaccount", voteInfo)
-    console.log("userVotewiftrempAccount", userVotewiftrempAccountLocal)
+    console.log("userVotewiftrempAccount", userVotewiftrempAccount)
     console.log("treasuryAccount", treasuryAccount)
     console.log("global vote", globalVoteAccount)
 
     const tx = await program.methods
-      .vote(new anchor.BN(1000000), true, { electionDay: {} }) //number in here is amount of tokens to stake 100=100
+      .vote(new anchor.BN(1000000), true, { fiveMonths: {} }) //number in here is amount of tokens to stake 100=100
       .signers([payer.payer])
       .accounts({
         voteInfoAcount: voteInfo,
         treasury_account: treasuryAccount,
         globalVoteAccount: globalVoteAccount,
         voteAccount: voteAccount,
-        userVotewiftrempAccount: userVotewiftrempAccountLocal.address,
+        userVotewiftrempAccount: userVotewiftrempAccount.address,
         mint: mintKeypair.publicKey,
         signer: payer.publicKey,
       })
@@ -301,7 +274,7 @@ console.log("gobal vote", globalVoteAccount)
     console.log("Your transaction signature collect vote", tx);
   })
 
-*/
+
 
 });
 

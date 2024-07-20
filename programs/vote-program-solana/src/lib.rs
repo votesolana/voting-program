@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use solana_program::clock::Clock;
 
-declare_id!("9uxgTYUzXAsWbRBGPUckxKcbzSS9bCYmMLjMfeUvMYer");
+declare_id!("FfUTJ9ehMc2wbB4mXp6KmM2idNZE1p4qFFVPysGFB3Gi");
 
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vaulttremp";
@@ -23,13 +23,6 @@ pub enum TimeLength {
     ElectionDay,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Clone)]
-pub enum Candidate {
-    Tremp,
-    Boden,
-    Tate,
-}
-
 #[program]
 pub mod vote_program_solana {
     use super::*;
@@ -41,7 +34,7 @@ pub mod vote_program_solana {
     pub fn vote(
         ctx: Context<Vote>,
         amount: u64,
-        candidate: Candidate,
+        vote_for_tremp: bool,
         timelength: TimeLength
     ) -> Result<()> {
         let length_in_seconds_locked: i64;
@@ -67,7 +60,7 @@ pub mod vote_program_solana {
         let vote_info_account = &mut ctx.accounts.vote_info_account;
         let global_vote_account = &mut ctx.accounts.global_vote_account;
 
-        if vote_info_account.is_voted == true {
+        if vote_info_account.is_voted {
             return Err(ErrorCode::IsVoted.into());
         }
 
@@ -79,28 +72,24 @@ pub mod vote_program_solana {
 
         vote_info_account.vote_locked_until = clock.unix_timestamp + length_in_seconds_locked;
 
-        //only for fivemonths directly by pass and set to specific data
         if timelength == TimeLength::ElectionDay {
             vote_info_account.vote_locked_until = length_in_seconds_locked;
         }
 
-        vote_info_account.candidate_chosen = candidate;
+        vote_info_account.length_locked = timelength;
+        vote_info_account.is_voted = true;
+        vote_info_account.wif_tremp = vote_for_tremp;
         vote_info_account.vote_amount = amount as u32;
-        vote_info_account.time_length = timelength;
 
         let vote_amount = amount
             .checked_mul((10u64).pow(ctx.accounts.mint.decimals as u32))
             .unwrap();
-        //1.000000
 
         let rewards = ((vote_amount as f64) * reward_rate_denominator) as u64;
-
-        //do a check to see if rewards are less than amount in reward wallet and return error code if so
 
         let bump = ctx.bumps.treasury_account;
         let signer: &[&[&[u8]]] = &[&[constants::TREASURY_SEED, &[bump]]];
 
-        //transfer from treasury to vote account
         transfer(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
@@ -114,26 +103,20 @@ pub mod vote_program_solana {
             rewards
         )?;
 
-        //transfer for user wallet to vote account
         transfer(
             CpiContext::new(ctx.accounts.token_program.to_account_info(), Transfer {
                 from: ctx.accounts.user_votewiftremp_account.to_account_info(),
                 to: ctx.accounts.vote_account.to_account_info(),
                 authority: ctx.accounts.signer.to_account_info(),
             }),
-            vote_amount //+reward pool amount and transfer from reward pool to vote_account
+            vote_amount
         )?;
 
-        if vote_info_account.candidate_chosen == Candidate::Tremp {
+        if vote_for_tremp {
             global_vote_account.tremp += amount as u32;
-        } else if vote_info_account.candidate_chosen == Candidate::Boden {
-            global_vote_account.boden += amount as u32;
         } else {
-            global_vote_account.tate += amount as u32;
+            global_vote_account.boden += amount as u32;
         }
-
-        // ALCULATE REWARD BASED ON SECOND FUNCTION PARAMETER TIME LENGTH, MULTIPLY REWARD RATE BY AMOUNT AND SEND REWARDS FROM REWARD WALLET TO VOTE_ACCOUNT ALONG WITH tokens
-        //FROM VOTEWIFTREMP USER Account
 
         Ok(())
     }
@@ -172,25 +155,19 @@ pub mod vote_program_solana {
             vote_amount
         )?;
 
+        vote_info_account.is_voted = false;
 
-
-        if vote_info_account.candidate_chosen == Candidate::Tremp {
+        if vote_info_account.wif_tremp {
             global_vote_account.tremp = global_vote_account.tremp
                 .checked_sub(vote_info_account.vote_amount)
                 .unwrap_or(0);
-        } else if vote_info_account.candidate_chosen == Candidate::Boden {
-            global_vote_account.boden = global_vote_account.boden
-                .checked_sub(vote_info_account.vote_amount)
-                .unwrap_or(0);
         } else {
-            global_vote_account.tate = global_vote_account.tate
+            global_vote_account.boden = global_vote_account.boden
                 .checked_sub(vote_info_account.vote_amount)
                 .unwrap_or(0);
         }
 
-        vote_info_account.is_voted = false;
         vote_info_account.vote_amount = 0;
-  
 
         Ok(())
     }
@@ -317,18 +294,17 @@ pub struct CollectVote<'info> {
 
 #[account]
 pub struct VoteInfo {
-    pub vote_locked_until: i64, // Exact time slot vote is placed
-    pub candidate_chosen: Candidate,
-    pub time_length: TimeLength,
-    pub vote_amount: u32, // Voted for Tremp or Boden
+    pub vote_locked_until: i64,
     pub is_voted: bool,
+    pub wif_tremp: bool,
+    pub vote_amount: u32,
+    pub length_locked: TimeLength,
 }
 
 #[account]
 pub struct GlobalVotes {
     pub tremp: u32,
     pub boden: u32,
-    pub tate: u32,
 }
 
 #[error_code]
