@@ -8,19 +8,6 @@ import { struct } from '@solana/buffer-layout';
 
 
 
-
-
-export interface GlobalVote {
-  tremp: BigInt,
-  boden: BigInt,
-}
-const globalVoteLayout = struct<GlobalVote>([
-  u64("tremp"),
-  u64("boden"),
-]);
-
-
-
 describe("vote-program-solana", () => {
   // Configure the client to use the local cluster.
   const provider = anchor.AnchorProvider.env();
@@ -44,9 +31,9 @@ describe("vote-program-solana", () => {
 
 
 
-  let walletAddy = new PublicKey("4EJ6QBUQacF3sSCg5UWnAi66uYaLsQ2pmiMbe2e8H3kk");
+  let walletAddy = new PublicKey("Ew824EPiCGbFnL6jkY1JP8qY6n5oRu1DhSLo59fmwkdb");
 
- let bob = async () => {
+ /*let bob = async () => {
     let userVotewiftrempAccountOtherWallet = await getOrCreateAssociatedTokenAccount(
       connection,
       payer.payer,
@@ -65,9 +52,10 @@ describe("vote-program-solana", () => {
     )
   }
   
-  //bob();
+  //bob(); */
   
 
+  let mintAddyVote = new PublicKey("7xyVxmGWot6kWD3Su7g717UU4JiBWxsKGfzNtn61vbcV");
 
 
 
@@ -86,8 +74,8 @@ describe("vote-program-solana", () => {
 
   it("Is initialized!", async () => {
     //await createMintToken();
-    console.log(mintKeypair.publicKey)
-    console.log("mint")
+    //console.log(mintKeypair.publicKey)
+    //console.log("mint")
 
 
 
@@ -103,12 +91,15 @@ describe("vote-program-solana", () => {
       program.programId
     )
 
+    console.log("global vote", globalVoteAccount)
+    console.log("treasuryAccount", treasuryAccount)
+
     const tx = await program.methods.initialize()
       .accounts({
         signer: payer.publicKey,
         globalVoteAccount: globalVoteAccount,
         treasury_account: treasuryAccount,
-        mint: mintKeypair.publicKey
+        mint: mintAddyVote,
       })
       .rpc();
     console.log("Your transaction signature", tx);
@@ -116,7 +107,7 @@ describe("vote-program-solana", () => {
 
   });
 
-
+/*
   it("vote", async () => {
 
     // Define the enumeration
@@ -146,21 +137,7 @@ describe("vote-program-solana", () => {
 
 
 
-    let userVotewiftrempAccount = await getOrCreateAssociatedTokenAccount(
-      connection,
-      payer.payer,
-      mintKeypair.publicKey,
-      payer.publicKey
-    );
-    await mintTo(
-      connection,
-      payer.payer,
-      mintKeypair.publicKey,
-      userVotewiftrempAccount.address,
-      payer.payer,
-      1e12 //100 and 1e7 is 10
-    )
-
+   
 
 
     let [treasuryAccount] = PublicKey.findProgramAddressSync(
@@ -274,7 +251,7 @@ describe("vote-program-solana", () => {
     console.log("Your transaction signature collect vote", tx);
   })
 
-
+*/
 
 });
 

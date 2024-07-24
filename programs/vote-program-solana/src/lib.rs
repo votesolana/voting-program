@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use solana_program::clock::Clock;
 
-declare_id!("FfUTJ9ehMc2wbB4mXp6KmM2idNZE1p4qFFVPysGFB3Gi");
+declare_id!("HVFEvAbJRwRXJD3cBFVHaBhJn41nxuChyb2VhxFbwAeB");
 
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vaulttremp";
@@ -15,7 +15,7 @@ pub mod constants {
     pub const GLOBAL_VOTE_SEED: &[u8] = b"votewiftrempglobal";
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, PartialEq)]
 pub enum TimeLength {
     OneDay,
     OneWeek,
@@ -76,7 +76,6 @@ pub mod vote_program_solana {
             vote_info_account.vote_locked_until = length_in_seconds_locked;
         }
 
-        vote_info_account.length_locked = timelength;
         vote_info_account.is_voted = true;
         vote_info_account.wif_tremp = vote_for_tremp;
         vote_info_account.vote_amount = amount as u32;
@@ -298,7 +297,6 @@ pub struct VoteInfo {
     pub is_voted: bool,
     pub wif_tremp: bool,
     pub vote_amount: u32,
-    pub length_locked: TimeLength,
 }
 
 #[account]
