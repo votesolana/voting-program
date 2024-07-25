@@ -6,7 +6,7 @@ use anchor_spl::{
 
 use solana_program::clock::Clock;
 
-declare_id!("HVFEvAbJRwRXJD3cBFVHaBhJn41nxuChyb2VhxFbwAeB");
+declare_id!("H6tgcEthAFnd2aiJp8ne4mE7FaonG1eP9ryXeodqn1ep");
 
 pub mod constants {
     pub const TREASURY_SEED: &[u8] = b"vote_vaulttremp";

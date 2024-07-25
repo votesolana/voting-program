@@ -13,16 +13,9 @@ describe("vote-program-solana", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(anchor.AnchorProvider.env());
   const payer = provider.wallet as anchor.Wallet;
-  const connection = new Connection("https://api.devnet.solana.com", "confirmed");
+  const connection = new Connection("https://api.mainnet-beta.solana.com", "confirmed");
   ;
-  const mintKeypair = Keypair.fromSecretKey(new Uint8Array([
-    73, 232, 239, 242, 113, 71, 182, 55, 127, 179, 240,
-    235, 7, 94, 76, 116, 255, 161, 36, 187, 50, 166,
-    232, 5, 34, 192, 7, 248, 157, 236, 81, 172, 92,
-    121, 49, 17, 91, 30, 188, 28, 103, 32, 69, 2,
-    111, 189, 2, 170, 103, 87, 139, 172, 154, 248, 243,
-    175, 184, 203, 4, 43, 211, 42, 51, 211
-  ]));
+
 
   console.log(payer.publicKey)
 

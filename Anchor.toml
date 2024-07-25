@@ -6,11 +6,11 @@ skip-lint = false
 
 
 [programs.devnet]
-vote_program_solana = "HVFEvAbJRwRXJD3cBFVHaBhJn41nxuChyb2VhxFbwAeB"
+vote_program_solana = "H6tgcEthAFnd2aiJp8ne4mE7FaonG1eP9ryXeodqn1ep"
 [programs.localnet]
-vote_program_solana = "HVFEvAbJRwRXJD3cBFVHaBhJn41nxuChyb2VhxFbwAeB"
+vote_program_solana = "H6tgcEthAFnd2aiJp8ne4mE7FaonG1eP9ryXeodqn1ep"
 [programs.mainnet]
-vote_program_solana = "HVFEvAbJRwRXJD3cBFVHaBhJn41nxuChyb2VhxFbwAeB"
+vote_program_solana = "H6tgcEthAFnd2aiJp8ne4mE7FaonG1eP9ryXeodqn1ep"
 
 [registry]
 url = "https://api.apr.dev"
